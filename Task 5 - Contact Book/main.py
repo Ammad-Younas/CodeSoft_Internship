@@ -212,23 +212,26 @@ class ExportDialog(QDialog):
             self.export_list.addItem(item)
 
     def export_contacts(self):
-        selected_items = self.export_list.selectedItems()
+        selected_items = self.export_list.selectedIndexes()
         if not selected_items:
             QMessageBox.warning(self, 'Warning', 'Please select contacts to export.')
             return
+
         filename, _ = QFileDialog.getSaveFileName(self, 'Save Contacts', '', 'VCF Files (*.vcf);;All Files (*)')
         if filename:
             with open(filename, 'w', encoding='utf-8') as vcf_file:
                 cursor = self.parent().db_conn.cursor()
                 cursor.execute("SELECT * FROM contacts")
                 contacts = cursor.fetchall()
-                for index, contact in enumerate(contacts):
-                    if index in [item.row() for item in selected_items]:
-                        name, mobile = contact[0], contact[1]
-                        vcf_file.write(f'BEGIN:VCARD\n')
-                        vcf_file.write(f'FN:{name}\n')
-                        vcf_file.write(f'TEL:{mobile}\n')
-                        vcf_file.write(f'END:VCARD\n')
+
+                for index in selected_items:
+                    contact = contacts[index.row()]
+                    name, mobile = contact[0], contact[1]
+
+                    vcf_file.write(f'BEGIN:VCARD\n')
+                    vcf_file.write(f'FN:{name}\n')
+                    vcf_file.write(f'TEL:{mobile}\n')
+                    vcf_file.write(f'END:VCARD\n')
 
 
 if __name__ == '__main__':
