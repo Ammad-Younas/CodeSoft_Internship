@@ -1,6 +1,6 @@
 import sys
 import sqlite3
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QTreeView, QFormLayout, QRadioButton, QDialogButtonBox, QMessageBox, QHeaderView, QFileDialog, QDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QTreeView, QFormLayout, QRadioButton, QDialogButtonBox, QMessageBox, QHeaderView, QFileDialog, QDialog, QListWidget, QListWidgetItem
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import os
 
@@ -42,7 +42,6 @@ class ContactApp(QWidget):
         self.tree_view = QTreeView(self)
         self.tree_view.setModel(self.tree_model)
         self.tree_view.header().setSectionResizeMode(QHeaderView.Stretch)
-        # self.tree_view.setEnabled(False)
 
         layout.addLayout(form_layout)
         layout.addLayout(button_layout)
@@ -67,7 +66,7 @@ class ContactApp(QWidget):
         elif sender == 'Update':
             self.update_contact()
         elif sender == 'Delete':
-            self.delete_contact()
+            self.confirm_delete_contact()
         elif sender == 'Export':
             self.export_contacts()
         elif sender == 'Search':
@@ -106,11 +105,20 @@ class ContactApp(QWidget):
                 self.db_conn.commit()
                 self.display_contacts()
 
-    def delete_contact(self):
+    def confirm_delete_contact(self):
         selected_items = self.tree_view.selectionModel().selectedIndexes()
         if not selected_items:
             QMessageBox.warning(self, 'Warning', 'Please select a contact to delete.')
             return
+
+        reply = QMessageBox.question(self, 'Confirm Deletion', 'Are you sure you want to delete this contact?', 
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.delete_contact()
+
+    def delete_contact(self):
+        selected_items = self.tree_view.selectionModel().selectedIndexes()
         selected_row = selected_items[0].row()
         selected_contact_name = self.tree_model.item(selected_row, 0).text()
         selected_contact_mobile = self.tree_model.item(selected_row, 1).text()
@@ -120,18 +128,10 @@ class ContactApp(QWidget):
         self.display_contacts()
 
     def export_contacts(self):
-        filename, _ = QFileDialog.getSaveFileName(self, 'Save Contacts', '', 'VCF Files (*.vcf);;All Files (*)')
-        if filename:
-            with open(filename, 'w', encoding='utf-8') as vcf_file:
-                cursor = self.db_conn.cursor()
-                cursor.execute("SELECT * FROM contacts")
-                contacts = cursor.fetchall()
-                for contact in contacts:
-                    name, mobile = contact[0], contact[1]
-                    vcf_file.write(f'BEGIN:VCARD\n')
-                    vcf_file.write(f'FN:{name}\n')
-                    vcf_file.write(f'TEL:{mobile}\n')
-                    vcf_file.write(f'END:VCARD\n')
+        selected_items = self.tree_view.selectionModel().selectedIndexes()
+        selected_rows = [index.row() for index in selected_items]
+        export_dialog = ExportDialog(self, selected_rows)
+        export_dialog.exec_()
 
     def search_contacts(self):
         term = self.search_entry.text()
@@ -184,6 +184,51 @@ class UpdateContactDialog(QDialog):
 
     def get_values(self):
         return self.name_entry.text(), self.mobile_entry.text()
+
+
+class ExportDialog(QDialog):
+    def __init__(self, parent, selected_rows):
+        super().__init__(parent)
+        self.setWindowTitle('Export Contacts')
+        self.layout = QVBoxLayout()
+
+        self.export_list = QListWidget(self)
+        self.export_list.setSelectionMode(QListWidget.MultiSelection)
+
+        self.export_button = QPushButton('Export', self)
+        self.export_button.clicked.connect(self.export_contacts)
+
+        self.layout.addWidget(self.export_list)
+        self.layout.addWidget(self.export_button)
+        self.setLayout(self.layout)
+
+        cursor = parent.db_conn.cursor()
+        cursor.execute("SELECT * FROM contacts")
+        contacts = cursor.fetchall()
+        for index, contact in enumerate(contacts):
+            item = QListWidgetItem(f'{contact[0]}: {contact[1]}')
+            if index in selected_rows:
+                item.setSelected(True)
+            self.export_list.addItem(item)
+
+    def export_contacts(self):
+        selected_items = self.export_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, 'Warning', 'Please select contacts to export.')
+            return
+        filename, _ = QFileDialog.getSaveFileName(self, 'Save Contacts', '', 'VCF Files (*.vcf);;All Files (*)')
+        if filename:
+            with open(filename, 'w', encoding='utf-8') as vcf_file:
+                cursor = self.parent().db_conn.cursor()
+                cursor.execute("SELECT * FROM contacts")
+                contacts = cursor.fetchall()
+                for index, contact in enumerate(contacts):
+                    if index in [item.row() for item in selected_items]:
+                        name, mobile = contact[0], contact[1]
+                        vcf_file.write(f'BEGIN:VCARD\n')
+                        vcf_file.write(f'FN:{name}\n')
+                        vcf_file.write(f'TEL:{mobile}\n')
+                        vcf_file.write(f'END:VCARD\n')
 
 
 if __name__ == '__main__':
