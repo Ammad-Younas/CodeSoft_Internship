@@ -1,7 +1,7 @@
 import sys
 import sqlite3
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QTreeView, QFormLayout, QRadioButton, QDialogButtonBox, QMessageBox, QHeaderView, QFileDialog, QDialog, QListWidget, QListWidgetItem
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 import os
 
 class ContactApp(QWidget):
@@ -14,6 +14,10 @@ class ContactApp(QWidget):
         self.display_contacts()
 
     def initUI(self):
+
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon/icon.ico")
+        self.setWindowIcon(QIcon(icon_path))
+
         layout = QVBoxLayout()
 
         form_layout = QFormLayout()
