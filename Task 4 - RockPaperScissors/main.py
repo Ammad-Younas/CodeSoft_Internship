@@ -21,7 +21,7 @@ class RockPaperScissorsGame(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle("Rock Paper Scissors")
-        self.setGeometry(80, 80, 400, 200)
+        self.setFixedSize(400, 200)
 
         self.centralWidget = QWidget()
         self.setCentralWidget(self.centralWidget)

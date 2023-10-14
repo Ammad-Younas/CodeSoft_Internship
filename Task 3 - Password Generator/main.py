@@ -13,7 +13,6 @@ class PasswordGenerator(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Password Generator')
-        self.setGeometry(350, 150, 640, 400)
         self.setFixedSize(640, 400)
 
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon/icon.ico")
