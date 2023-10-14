@@ -1,95 +1,127 @@
 import sys
 import random
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QMessageBox
-from PyQt5.QtGui import QIcon
-import os
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QLineEdit
+from PyQt5.QtCore import Qt
 
-class RockPaperScissorsGame(QWidget):
+
+class RockPaperScissorsGame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.rounds_played = 0
+        self.player_wins_total = 0
+        self.computer_wins_total = 0
+        self.player_wins = 0
+        self.computer_wins = 0
 
     def initUI(self):
-        self.user_score = 0
-        self.comp_score = 0
-        self.rounds_played = 0
-        self.rounds_to_play = 10
+        self.setWindowTitle("Rock Paper Scissors")
+        self.setGeometry(80, 80, 400, 200)
 
-        self.setFixedSize(300, 300)
+        self.centralWidget = QWidget()
+        self.setCentralWidget(self.centralWidget)
 
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon/icon.ico")
-        self.setWindowIcon(QIcon(icon_path))
+        self.layout = QVBoxLayout()
 
-        self.result_label = QLabel('')
-        self.score_label = QLabel('User: 0 - Computer: 0')
+        self.vs_layout = QHBoxLayout()
+        self.player_label = QLabel("Player: ")
+        self.computer_label = QLabel("Computer: ")
+        self.vs_layout.addWidget(self.player_label)
+        self.vs_layout.addWidget(self.computer_label)
+        self.layout.addLayout(self.vs_layout)
 
-        rock_button = QPushButton('Rock', self)
-        rock_button.clicked.connect(lambda: self.on_choice_selected('rock'))
+        self.buttons_layout = QHBoxLayout()
 
-        paper_button = QPushButton('Paper', self)
-        paper_button.clicked.connect(lambda: self.on_choice_selected('paper'))
+        self.rock_button = QPushButton("Rock")
+        self.rock_button.clicked.connect(lambda: self.play_round("Rock"))
 
-        scissors_button = QPushButton('Scissors', self)
-        scissors_button.clicked.connect(lambda: self.on_choice_selected('scissors'))
+        self.paper_button = QPushButton("Paper")
+        self.paper_button.clicked.connect(lambda: self.play_round("Paper"))
 
-        layout = QVBoxLayout()
-        layout.addWidget(rock_button)
-        layout.addWidget(paper_button)
-        layout.addWidget(scissors_button)
-        layout.addWidget(self.result_label)
-        layout.addWidget(self.score_label)
+        self.scissors_button = QPushButton("Scissors")
+        self.scissors_button.clicked.connect(lambda: self.play_round("Scissors"))
 
-        self.setLayout(layout)
-        self.setWindowTitle('Rock-Paper-Scissors Game')
-        self.play_round()
+        self.buttons_layout.addWidget(self.rock_button)
+        self.buttons_layout.addWidget(self.paper_button)
+        self.buttons_layout.addWidget(self.scissors_button)
 
-    def computer_choice(self):
-        choices = ['rock', 'paper', 'scissors']
-        return random.choice(choices)
+        self.layout.addLayout(self.buttons_layout)
 
-    def determine_winner(self, user_choice, comp_choice):
-        if user_choice == comp_choice:
-            return 'It\'s a tie!'
-        elif (user_choice == 'rock' and comp_choice == 'scissors') or \
-             (user_choice == 'paper' and comp_choice == 'rock') or \
-             (user_choice == 'scissors' and comp_choice == 'paper'):
-            self.user_score += 1
-            return 'You win!'
+        self.wins_label = QLabel("Wins: ")
+        self.layout.addWidget(self.wins_label)
+
+        self.win_show = QLineEdit()
+        self.win_show.setReadOnly(True)
+        self.win_show.setFocusPolicy(Qt.NoFocus)
+        self.layout.addWidget(self.win_show)
+
+        self.reset_button = QPushButton("Reset Game")
+        self.reset_button.clicked.connect(self.reset_game)
+        self.layout.addWidget(self.reset_button)
+
+        self.centralWidget.setLayout(self.layout)
+
+        self.player_wins = 0
+
+    def play_round(self, player_choice):
+        choices = ["Rock", "Paper", "Scissors"]
+        computer_choice = random.choice(choices)
+
+        self.player_label.setText(f"Player: {player_choice}")
+        self.computer_label.setText(f"Computer: {computer_choice}")
+
+        if player_choice == computer_choice:
+            result = "It's a Tie!"
+        elif (
+            (player_choice == "Rock" and computer_choice == "Scissors")
+            or (player_choice == "Paper" and computer_choice == "Rock")
+            or (player_choice == "Scissors" and computer_choice == "Paper")
+        ):
+            result = "Player Wins!"
+            self.player_wins += 1
         else:
-            self.comp_score += 1
-            return 'Computer wins!'
+            result = "Computer Wins!"
+            self.computer_wins += 1
 
-    def play_round(self):
-        if self.rounds_played < self.rounds_to_play:
-            self.rounds_played += 1
-            self.user_choice = None
-            self.comp_choice = None
-            self.result_label.setText('')
+        self.rounds_played += 1
+
+        if self.rounds_played == 10:
+            final_result = ""
+            if self.player_wins > self.computer_wins:
+                final_result = "Player Wins!"
+                self.player_wins_total += 1
+            elif self.player_wins < self.computer_wins:
+                final_result = "Computer Wins!"
+                self.computer_wins_total += 1
+            else:
+                final_result = "It's a Tie!"
+
+            self.win_show.setText(f"Final Winner: {final_result}")
+            self.win_show.setCursorPosition(0)
+
+            self.rounds_played = 0
+            self.player_wins = 0
+            self.computer_wins = 0
+            self.rock_button.setEnabled(False)
+            self.paper_button.setEnabled(False)
+            self.scissors_button.setEnabled(False)
         else:
-            self.show_result()
+            self.win_show.setText(str(result))
+            self.win_show.setCursorPosition(0)
 
-    def on_choice_selected(self, choice):
-        self.user_choice = choice
-        self.comp_choice = self.computer_choice()
-        winner = self.determine_winner(self.user_choice, self.comp_choice)
-        self.result_label.setText(f'Your choice: {self.user_choice.capitalize()}\n'
-                                  f'Computer\'s choice: {self.comp_choice.capitalize()}\n'
-                                  f'Result: {winner}')
-        self.score_label.setText(f'User: {self.user_score} - Computer: {self.comp_score}')
-        self.play_round()
 
-    def show_result(self):
-        result_message = f'Game Over! You: {self.user_score} - Computer: {self.comp_score}\n'
-        if self.user_score > self.comp_score:
-            result_message += 'You win!'
-        elif self.user_score < self.comp_score:
-            result_message += 'Computer wins!'
-        else:
-            result_message += 'It\'s a tie!'
-        QMessageBox.information(self, 'Game Over', result_message)
-        sys.exit()
+    def reset_game(self):
+        self.player_label.setText("Player: ")
+        self.computer_label.setText("Computer: ")
+        self.win_show.clear()
+        self.player_wins = 0
+        self.rock_button.setEnabled(True)
+        self.paper_button.setEnabled(True)
+        self.scissors_button.setEnabled(True)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     game = RockPaperScissorsGame()
+    game.show()
     sys.exit(app.exec_())
