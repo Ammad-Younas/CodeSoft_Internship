@@ -2,6 +2,8 @@ import sys
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QLineEdit
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+import os
 
 
 class RockPaperScissorsGame(QMainWindow):
@@ -13,6 +15,9 @@ class RockPaperScissorsGame(QMainWindow):
         self.computer_wins_total = 0
         self.player_wins = 0
         self.computer_wins = 0
+
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon/icon.ico")
+        self.setWindowIcon(QIcon(icon_path))
 
     def initUI(self):
         self.setWindowTitle("Rock Paper Scissors")
